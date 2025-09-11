@@ -3824,6 +3824,7 @@ class AsyncWebClient(AsyncBaseClient):
         initial_comment: Optional[str] = None,
         thread_ts: Optional[str] = None,
         request_file_info: bool = True,  # since v3.23, this flag is no longer necessary
+        blocks: Optional[List[Block]] = None,
         **kwargs,
     ) -> AsyncSlackResponse:
         """This wrapper method provides an easy way to upload files using the following endpoints:
@@ -3903,6 +3904,7 @@ class AsyncWebClient(AsyncBaseClient):
             channels=channels,
             initial_comment=initial_comment,
             thread_ts=thread_ts,
+            blocks=blocks,
             **kwargs,
         )
         if len(completion.get("files")) == 1:  # type: ignore[arg-type, union-attr, unused-ignore]
@@ -3939,6 +3941,7 @@ class AsyncWebClient(AsyncBaseClient):
         channels: Optional[List[str]] = None,
         initial_comment: Optional[str] = None,
         thread_ts: Optional[str] = None,
+        blocks: Optional[List[Block]] = None,
         **kwargs,
     ) -> AsyncSlackResponse:
         """Finishes an upload started with files.getUploadURLExternal.
@@ -3951,6 +3954,7 @@ class AsyncWebClient(AsyncBaseClient):
                 "channel_id": channel_id,
                 "initial_comment": initial_comment,
                 "thread_ts": thread_ts,
+                "blocks": json.dumps(blocks),
             }
         )
         if channels:
