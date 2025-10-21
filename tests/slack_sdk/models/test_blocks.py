@@ -4,36 +4,39 @@ from typing import List
 from slack_sdk.errors import SlackObjectFormationError
 from slack_sdk.models.blocks import (
     ActionsBlock,
+    Block,
+    ButtonElement,
+    CallBlock,
+    ContextActionsBlock,
     ContextBlock,
     DividerBlock,
-    ImageBlock,
-    SectionBlock,
-    InputBlock,
     FileBlock,
-    Block,
-    CallBlock,
-    ButtonElement,
-    StaticSelectElement,
-    OverflowMenuElement,
-    ImageElement,
-    LinkButtonElement,
-    PlainTextObject,
-    MarkdownTextObject,
     HeaderBlock,
-    VideoBlock,
+    ImageBlock,
+    ImageElement,
+    InputBlock,
+    LinkButtonElement,
+    MarkdownBlock,
+    MarkdownTextObject,
     Option,
+    OverflowMenuElement,
+    PlainTextObject,
     RichTextBlock,
-    RichTextSectionElement,
-    RichTextListElement,
-    RichTextQuoteElement,
-    RichTextPreformattedElement,
     RichTextElementParts,
+    RichTextListElement,
+    RichTextPreformattedElement,
+    RichTextQuoteElement,
+    RichTextSectionElement,
+    SectionBlock,
+    StaticSelectElement,
+    VideoBlock,
 )
-from slack_sdk.models.blocks.basic_components import SlackFile
+from slack_sdk.models.blocks.basic_components import FeedbackButtonObject, SlackFile
+from slack_sdk.models.blocks.block_elements import FeedbackButtonsElement, IconButtonElement
+
 from . import STRING_3001_CHARS
 
-
-# https://api.slack.com/reference/block-kit/blocks
+# https://docs.slack.dev/reference/block-kit/blocks
 
 
 class BlockTests(unittest.TestCase):
@@ -526,6 +529,54 @@ class ActionsBlockTests(unittest.TestCase):
 
 
 # ----------------------------------------------
+# ContextActionsBlock
+# ----------------------------------------------
+
+
+class ContextActionsBlockTests(unittest.TestCase):
+    def test_document(self):
+        input = {
+            "type": "context_actions",
+            "block_id": "context-actions-1",
+            "elements": [
+                {
+                    "type": "feedback_buttons",
+                    "action_id": "feedback-action",
+                    "positive_button": {"text": {"type": "plain_text", "text": "+1"}, "value": "positive"},
+                    "negative_button": {"text": {"type": "plain_text", "text": "-1"}, "value": "negative"},
+                },
+                {
+                    "type": "icon_button",
+                    "action_id": "delete-action",
+                    "icon": "trash",
+                    "text": {"type": "plain_text", "text": "Delete"},
+                    "value": "delete",
+                },
+            ],
+        }
+        self.assertDictEqual(input, ContextActionsBlock(**input).to_dict())
+        self.assertDictEqual(input, Block.parse(input).to_dict())
+
+    def test_with_feedback_buttons(self):
+        feedback_buttons = FeedbackButtonsElement(
+            action_id="feedback-action",
+            positive_button=FeedbackButtonObject(text="Good", value="positive"),
+            negative_button=FeedbackButtonObject(text="Bad", value="negative"),
+        )
+        block = ContextActionsBlock(elements=[feedback_buttons])
+        self.assertEqual(len(block.elements), 1)
+        self.assertEqual(block.elements[0].type, "feedback_buttons")
+
+    def test_with_icon_button(self):
+        icon_button = IconButtonElement(
+            action_id="icon-action", icon="star", text=PlainTextObject(text="Favorite"), value="favorite"
+        )
+        block = ContextActionsBlock(elements=[icon_button])
+        self.assertEqual(len(block.elements), 1)
+        self.assertEqual(block.elements[0].type, "icon_button")
+
+
+# ----------------------------------------------
 # Context
 # ----------------------------------------------
 
@@ -802,6 +853,39 @@ class HeaderBlockTests(unittest.TestCase):
         }
         with self.assertRaises(SlackObjectFormationError):
             HeaderBlock(**input).validate_json()
+
+
+# ----------------------------------------------
+# MarkdownBlock
+# ----------------------------------------------
+
+
+class MarkdownBlockTests(unittest.TestCase):
+    def test_document(self):
+        input = {
+            "type": "markdown",
+            "block_id": "introduction",
+            "text": "**Welcome!**",
+        }
+        self.assertDictEqual(input, MarkdownBlock(**input).to_dict())
+        self.assertDictEqual(input, Block.parse(input).to_dict())
+
+    def test_text_length_12000(self):
+        input = {
+            "type": "markdown",
+            "block_id": "numbers",
+            "text": "1234567890" * 1200,
+        }
+        MarkdownBlock(**input).validate_json()
+
+    def test_text_length_12001(self):
+        input = {
+            "type": "markdown",
+            "block_id": "numbers",
+            "text": "1234567890" * 1200 + "1",
+        }
+        with self.assertRaises(SlackObjectFormationError):
+            MarkdownBlock(**input).validate_json()
 
 
 # ----------------------------------------------
